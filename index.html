@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Nobu Social</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-inner">
+                <a href="/" class="logo">
+                    <span class="logo-icon"><i class="fa-solid fa-feather"></i></span>
+                    <span class="logo-text">Nobu</span>
+                </a>
+                <div class="profile-badge" id="profileBadge">
+                    <div class="profile-avatar" id="profileAvatar">
+                        <span id="profileInitial">?</span>
+                    </div>
+                    <span class="profile-name" id="profileName">Гость</span>
+                    <button class="profile-edit-btn" id="profileEditBtn" aria-label="Редактировать профиль">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="profile-editor-overlay hidden" id="profileEditorOverlay">
+            <div class="profile-editor-modal">
+                <h3 class="profile-editor-title">Редактирование профиля</h3>
+                <div class="profile-editor-avatar-section">
+                    <div class="profile-editor-avatar" id="profileEditorAvatar">
+                        <span id="profileEditorInitial">?</span>
+                    </div>
+                    <label class="profile-editor-avatar-btn">
+                        <i class="fa-solid fa-camera"></i> Изменить фото
+                        <input type="file" id="avatarFileInput" accept="image/*" hidden>
+                    </label>
+                </div>
+                <input type="text" class="profile-editor-input" id="nicknameInput" placeholder="Ваш никнейм" maxlength="30" autocomplete="off">
+                <div class="profile-editor-actions">
+                    <button class="btn btn-secondary" id="cancelProfileBtn">Отмена</button>
+                    <button class="btn btn-primary" id="saveProfileBtn">Сохранить</button>
+                </div>
+                <div class="profile-editor-error hidden" id="profileEditorError"></div>
+            </div>
+        </div>
+
+        <main class="main">
+            <section class="composer">
+                <div class="composer-header">
+                    <div class="composer-avatar" id="composerAvatar">
+                        <span id="composerInitial">?</span>
+                    </div>
+                    <span class="composer-label" id="composerLabel">Новый пост</span>
+                </div>
+                <textarea class="composer-textarea" id="postTextarea" placeholder="Что у вас нового?" maxlength="500" rows="3"></textarea>
+                <div class="composer-footer">
+                    <div class="composer-actions">
+                        <button class="composer-action-btn" id="attachImageBtn" aria-label="Прикрепить изображение">
+                            <i class="fa-solid fa-image"></i>
+                        </button>
+                        <input type="file" id="imageFileInput" accept="image/*" hidden>
+                    </div>
+                    <div class="composer-right">
+                        <span class="composer-counter" id="charCounter">0 / 500</span>
+                        <button class="btn btn-primary composer-submit" id="publishBtn" disabled>
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Отправить</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="composer-preview hidden" id="imagePreviewContainer">
+                    <img id="imagePreview" alt="Предпросмотр">
+                    <button class="composer-preview-remove" id="removeImageBtn">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="composer-error hidden" id="composerError">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span id="composerErrorText"></span>
+                </div>
+            </section>
+
+            <section class="feed">
+                <div class="feed-header">
+                    <h2 class="feed-title">Лента</h2>
+                    <div class="feed-status">
+                        <span class="feed-status-dot online" id="statusDot"></span>
+                        <span class="feed-status-text" id="statusText">Онлайн</span>
+                    </div>
+                </div>
+                <div class="feed-content" id="postsFeed">
+                    <div class="feed-placeholder" id="feedLoading">
+                        <i class="fa-solid fa-spinner fa-spin-pulse"></i>
+                        <span>Загрузка постов...</span>
+                    </div>
+                    <div class="feed-placeholder hidden" id="feedEmpty">
+                        <i class="fa-solid fa-inbox"></i>
+                        <h3>Лента пуста</h3>
+                        <p>Опубликуйте первый пост</p>
+                    </div>
+                    <div class="feed-placeholder hidden" id="feedError">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <h3>Не удалось загрузить</h3>
+                        <button class="btn btn-secondary" id="retryBtn">Попробовать снова</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+</html>
