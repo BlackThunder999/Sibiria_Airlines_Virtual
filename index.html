@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chirper | Black & White</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Подключаем Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>Chirper.</h1>
+        </header>
+
+        <main>
+            <!-- Форма для нового поста -->
+            <div class="compose-box">
+                <textarea id="chirp-input" placeholder="Что происходит?..." rows="3"></textarea>
+                <div class="compose-actions">
+                    <button id="post-btn" class="btn">Опубликовать</button>
+                </div>
+            </div>
+
+            <!-- Лента постов -->
+            <div class="feed" id="feed">
+                <!-- Посты будут появляться здесь -->
+                <div class="loader" id="loader">Загрузка...</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
