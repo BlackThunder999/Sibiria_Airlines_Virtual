@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>School Stealth 3D - Final</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+        body { background:#000; overflow:hidden; font-family:Arial,sans-serif; height:100vh; width:100vw; touch-action:manipulation; }
+        canvas { display:block; }
+        #topUI { position:fixed; top:8px; left:8px; right:8px; z-index:10; display:flex; align-items:center; gap:6px; background:rgba(0,0,0,0.7); padding:6px 10px; border-radius:8px; color:#fff; font-size:11px; pointer-events:none; }
+        #timeUI { color:#ffd700; font-weight:bold; min-width:55px; }
+        #lessonUI { color:#fff; font-size:10px; margin:0 4px; }
+        #suspicionBar { flex:1; height:7px; background:#333; border-radius:3px; overflow:hidden; }
+        #suspicionFill { height:100%; width:0%; background:linear-gradient(90deg,#0f0,#ff0,#f00); transition:width 0.3s; }
+        #staminaMiniBar { width:50px; height:5px; background:#333; border-radius:2px; overflow:hidden; }
+        #staminaMiniFill { height:100%; width:100%; background:#ffd700; transition:width 0.2s; }
+        #controlsUI { position:fixed; bottom:15px; left:8px; right:8px; z-index:10; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
+        #joystickZone { width:110px; height:110px; pointer-events:auto; position:relative; }
+        #joystickBase { width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.2); position:relative; }
+        #joystickKnob { width:45px; height:45px; border-radius:50%; background:rgba(255,255,255,0.3); border:2px solid rgba(255,255,255,0.5); position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
+        #rightControls { display:flex; flex-direction:column; gap:6px; align-items:flex-end; pointer-events:auto; }
+        .btn-row { display:flex; gap:6px; }
+        .game-btn { width:50px; height:50px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+        .game-btn:active { background:rgba(255,255,255,0.3); transform:scale(0.9); }
+        .btn-run { border-color:#ffd700; } .btn-jump { border-color:#0bf; } .btn-action { border-color:#f69; width:60px; height:60px; font-size:26px; }
+        #menuScreen { position:fixed; inset:0; z-index:100; background:linear-gradient(135deg,#1a1a2e,#16213e,#0a0a0a); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+        #menuScreen.hidden { display:none; }
+        .menu-title { font-size:26px; color:#ffd700; text-align:center; text-shadow:0 0 20px rgba(255,215,0,0.5); }
+        .menu-btn { width:180px; padding:14px; font-size:16px; font-weight:bold; border:2px solid #ffd700; background:rgba(255,215,0,0.1); color:#ffd700; border-radius:10px; cursor:pointer; }
+        .menu-btn:active { background:#ffd700; color:#000; }
+        #dialogBox { position:fixed; bottom:175px; left:8px; right:8px; z-index:15; background:rgba(0,0,0,0.92); border:2px solid #ffd700; border-radius:10px; padding:12px; color:#fff; font-size:13px; display:none; }
+        #dialogBox.show { display:block; }
+        #dialogName { color:#ffd700; font-weight:bold; margin-bottom:4px; }
+        #dialogText { margin-bottom:8px; line-height:1.4; }
+        #dialogBtns { display:flex; gap:6px; flex-wrap:wrap; }
+        .dialog-btn { padding:8px 14px; background:rgba(255,215,0,0.1); border:1px solid #ffd700; color:#ffd700; border-radius:6px; cursor:pointer; font-size:12px; }
+        .dialog-btn:active { background:#ffd700; color:#000; }
+        #miniMap { position:fixed; top:45px; right:6px; width:65px; height:65px; z-index:8; border:2px solid rgba(255,255,255,0.3); border-radius:4px; overflow:hidden; background:rgba(0,0,0,0.6); }
+        #miniMapCanvas { width:100%; height:100%; }
+        #endScreen { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.95); display:none; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+        #endScreen.show { display:flex; }
+        #endTitle { font-size:24px; color:#ffd700; } #endText { color:#fff; font-size:13px; text-align:center; max-width:280px; } #endScore { color:#888; font-size:12px; }
+    </style>
+</head>
+<body>
+<div id="topUI"><span id="timeUI">🕐 08:30</span><span id="lessonUI"></span><div id="suspicionBar"><div id="suspicionFill"></div></div><div id="staminaMiniBar"><div id="staminaMiniFill"></div></div></div>
+<div id="controlsUI"><div id="joystickZone"><div id="joystickBase"><div id="joystickKnob"></div></div></div><div id="rightControls"><div class="btn-row"><button class="game-btn btn-run" id="btnRun">🏃</button><button class="game-btn btn-jump" id="btnJump">🦘</button></div><button class="game-btn btn-action" id="btnAction">👋</button></div></div>
+<div id="menuScreen"><div class="menu-title">🏫 Школа Выживания 3D</div><button class="menu-btn" id="btnPlay">▶ ИГРАТЬ</button></div>
+<div id="dialogBox"><div id="dialogName"></div><div id="dialogText"></div><div id="dialogBtns"></div></div>
+<div id="miniMap"><canvas id="miniMapCanvas"></canvas></div>
+<div id="endScreen"><div id="endTitle"></div><div id="endText"></div><div id="endScore"></div><button class="menu-btn" id="btnRestart">Заново</button></div>
+
+<script>
+// ==================== THREE.JS SETUP ====================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a0f0a);
+scene.fog = new THREE.Fog(0x1a0f0a, 15, 50);
+const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.5, 80);
+camera.position.set(0,16,20); camera.lookAt(0,0,0);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+document.body.appendChild(renderer.domElement);
+const mmCanvas = document.getElementById('miniMapCanvas');
+const mmCtx = mmCanvas.getContext('2d'); mmCanvas.width=65; mmCanvas.height=65;
+
+scene.add(new THREE.AmbientLight(0x404060,0.6));
+const dl = new THREE.DirectionalLight(0xffeedd,0.7); dl.position.set(10,20,5); dl.castShadow=true;
+dl.shadow.mapSize.width=1024; dl.shadow.mapSize.height=1024; dl.shadow.camera.near=1; dl.shadow.camera.far=60;
+dl.shadow.camera.left=-25; dl.shadow.camera.right=25; dl.shadow.camera.top=25; dl.shadow.camera.bottom=-25;
+scene.add(dl);
+for(let z=-14;z<=14;z+=7) for(let x=-16;x<=16;x+=8){const pl=new THREE.PointLight(0xffcc88,0.5,10);pl.position.set(x,3.5,z);pl.castShadow=true;scene.add(pl);}
+
+const fg=new THREE.PlaneGeometry(36,36);const fm=new THREE.Mesh(fg,new THREE.MeshStandardMaterial({color:0x3d2817,roughness:0.9}));
+fm.rotation.x=-Math.PI/2; fm.receiveShadow=true; scene.add(fm);
+for(let z=-17;z<18;z+=2) for(let x=-17;x<18;x+=2){const t=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.8),new THREE.MeshStandardMaterial({color:Math.random()>0.5?0x4a3020:0x362318,roughness:0.85}));t.rotation.x=-Math.PI/2;t.position.set(x+1,0.01,z+1);t.receiveShadow=true;scene.add(t);}
+
+function w(x,y,z,w,h,d,c=0x8b7355){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c,roughness:0.7}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;scene.add(m);}
+w(0,2.5,-18,36,5,0.5);w(0,2.5,18,36,5,0.5);w(-18,2.5,0,0.5,5,36);w(18,2.5,0,0.5,5,36);
+w(-7,2.5,-9,0.4,5,10,0xa09080);w(7,2.5,-9,0.4,5,10,0xa09080);w(-7,2.5,9,0.4,5,10,0xa09080);w(7,2.5,9,0.4,5,10,0xa09080);w(0,2.5,-5,14,5,0.4,0xa09080);w(0,2.5,5,14,5,0.4,0xa09080);
+
+function dk(x,y,z){const t=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.1,1),new THREE.MeshStandardMaterial({color:0xdeb887,roughness:0.5}));t.position.set(x,0.9,z);t.castShadow=t.receiveShadow=true;scene.add(t);for(let lx=-0.5;lx<=0.5;lx+=1)for(let lz=-0.35;lz<=0.35;lz+=0.7){const l=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.8),new THREE.MeshStandardMaterial({color:0x888888,roughness:0.5,metalness:0.5}));l.position.set(x+lx,0.4,z+lz);l.castShadow=true;scene.add(l);}}
+for(let r=0;r<3;r++) for(let c=0;c<2;c++){dk(-13+c*2,0,-13+r*2);dk(13-c*2,0,-13+r*2);}
+
+// ДВЕРИ
+const doors=[];
+function dr(x,y,z,nm){const f=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.8,0.2),new THREE.MeshStandardMaterial({color:0x5c4033,roughness:0.6}));f.position.set(x,1.4,z);f.castShadow=true;scene.add(f);const d=new THREE.Mesh(new THREE.BoxGeometry(0.5,2.6,0.1),new THREE.MeshStandardMaterial({color:0x8b6914,roughness:0.4}));d.position.set(x,1.3,z);d.castShadow=true;d.userData={nm,open:false,ox:x,opx:x+0.7};scene.add(d);doors.push(d);}
+dr(-9,1.4,0,'📐 Математика');dr(9,1.4,0,'⚡ Физика');dr(-4,1.4,-5.2,'🚽 Туалет');dr(4,1.4,-5.2,'🏥 Медпункт');dr(-4,1.4,5.2,'🗣️ Логопед');dr(4,1.4,5.2,'🧥 Раздевалка');
+
+// ИГРОК
+const pg=new THREE.CapsuleGeometry(0.35,1,4,8);const pm=new THREE.Mesh(pg,new THREE.MeshStandardMaterial({color:0xffd700,roughness:0.3}));pm.position.set(0,0.7,0);pm.castShadow=true;scene.add(pm);
+const eg=new THREE.SphereGeometry(0.07);const em=new THREE.MeshStandardMaterial({color:0x000000});const le=new THREE.Mesh(eg,em);le.position.set(-0.1,0.9,0.3);pm.add(le);const re=new THREE.Mesh(eg,em);re.position.set(0.1,0.9,0.3);pm.add(re);
+const sh=new THREE.Mesh(new THREE.CircleGeometry(0.35,16),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.3}));sh.rotation.x=-Math.PI/2;sh.position.y=0.02;scene.add(sh);
+
+// УЧИТЕЛЯ
+const teachers=[];
+function tc(x,y,z,col,mnx,mxx,mnz,mxz){const b=new THREE.Mesh(new THREE.CapsuleGeometry(0.35,1,4,8),new THREE.MeshStandardMaterial({color:col,roughness:0.4}));b.position.set(x,y,z);b.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.3),new THREE.MeshStandardMaterial({color:0xffd5b4,roughness:0.6}));h.position.y=0.8;b.add(h);const ht=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.35,0.2,8),new THREE.MeshStandardMaterial({color:0x333333,roughness:0.4}));ht.position.y=1.05;b.add(ht);scene.add(b);return{mesh:b,mnx,mxx,mnz,mxz,dx:Math.random()>0.5?1:-1,dz:Math.random()>0.5?1:-1,sp:0.03+Math.random()*0.02};}
+teachers.push(tc(-11,0.7,-10,0xff4444,-16,-6,-15,-5));teachers.push(tc(11,0.7,10,0x4444ff,6,16,5,15));teachers.push(tc(0,0.7,-15,0xff8844,-5,5,-17,-10));
+
+// NPC
+const npcs=[];
+function npc(x,y,z,color,name,dialogs){const b=new THREE.Mesh(new THREE.CapsuleGeometry(0.3,0.8,4,8),new THREE.MeshStandardMaterial({color,roughness:0.4}));b.position.set(x,y,z);b.castShadow=true;const h=new THREE.Mesh(new THREE.SphereGeometry(0.25),new THREE.MeshStandardMaterial({color:0xffd5b4,roughness:0.6}));h.position.y=0.6;b.add(h);scene.add(b);npcs.push({mesh:b,name,dialogs,x,z});}
+npc(-14,0.6,4,0x88ff88,'🍺 Друн',['Слышь... дай списать?','Я не пью, я существую в жидком состоянии.','Забей, я сам не знаю что задали.']);
+npc(14,0.6,-4,0x8888ff,'🛋️ Скуф',['На физру? Не, я тут посижу.','Мой диван — моя крепость.','Отстань, я отдыхаю.']);
+npc(-8,0.6,-12,0xff88ff,'🧑‍⚕️ Медсестра',['Что болит? Голова? Живот? Совесть?','Температуры нет. Иди на урок.','Ладно, дам справку на 10 минут. Отдыхай.']);
+
+// УКРЫТИЯ
+const hideouts=[{x:-4,z:-5.2,nm:'🚽 Туалет',r:2},{x:4,z:-5.2,nm:'🏥 Медпункт',r:2},{x:-4,z:5.2,nm:'🗣️ Логопед',r:2},{x:4,z:5.2,nm:'🧥 Раздевалка',r:2}];
+
+// РАСПИСАНИЕ
+const schedule=[{time:0,lesson:'1 урок: Математика'},{time:45,lesson:'Перемена'},{time:60,lesson:'2 урок: Физика'},{time:105,lesson:'Перемена'},{time:120,lesson:'3 урок: История'},{time:165,lesson:'Большая перемена'},{time:195,lesson:'4 урок: Физра'},{time:240,lesson:'Перемена'},{time:255,lesson:'5 урок: Химия'},{time:300,lesson:'Перемена'},{time:315,lesson:'6 урок: Литература'}];
+
+// ПЕРЕМЕННЫЕ
+let gameRunning=false,suspicion=0,gameTime=0,score=0,stamina=100,isRunning=false,isJumping=false,jumpVel=0;
+let jx=0,jy=0,ja=false,camAngle=0,keys={};
+function msg(t){const b=document.getElementById('dialogBox');document.getElementById('dialogName').textContent='';document.getElementById('dialogText').textContent=t;document.getElementById('dialogBtns').innerHTML='<button class="dialog-btn" onclick="closeDialog()">OK</button>';b.classList.add('show');setTimeout(()=>b.classList.remove('show'),2500);}
+function closeDialog(){document.getElementById('dialogBox').classList.remove('show');}
+
+// ДЖОЙСТИК
+const jz=document.getElementById('joystickZone'),jk=document.getElementById('joystickKnob');
+jz.addEventListener('touchstart',e=>{e.preventDefault();ja=true;uj(e.touches[0]);});
+jz.addEventListener('touchmove',e=>{e.preventDefault();if(ja) uj(e.touches[0]);});
+jz.addEventListener('touchend',()=>{ja=false;jx=0;jy=0;jk.style.transform='translate(-50%,-50%)';});
+function uj(t){const r=jz.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,md=r.width/2-22;let dx=t.clientX-cx,dy=t.clientY-cy;const d=Math.sqrt(dx*dx+dy*dy);if(d>md){dx=dx/d*md;dy=dy/d*md;}jk.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;jx=dx/md;jy=dy/md;}
+document.addEventListener('touchmove',e=>{for(const t of e.touches)if(t.clientX>innerWidth/2&&!ja)camAngle+=(t.movementX||0)*0.005;});
+document.getElementById('btnRun').addEventListener('touchstart',e=>{e.preventDefault();if(stamina>0)isRunning=true;});
+document.getElementById('btnRun').addEventListener('touchend',()=>{isRunning=false;});
+document.getElementById('btnJump').addEventListener('touchstart',e=>{e.preventDefault();if(!isJumping){isJumping=true;jumpVel=0.25;}});
+document.getElementById('btnAction').addEventListener('touchstart',e=>{e.preventDefault();interact();});
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='e'||e.key==='E')interact();});
+document.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+// ВЗАИМОДЕЙСТВИЕ
+function interact(){const px=pm.position.x,pz=pm.position.z;
+for(const d of doors){const dx=px-d.position.x,dz=pz-d.position.z;if(Math.sqrt(dx*dx+dz*dz)<2.5){d.userData.open=!d.userData.open;d.position.x=d.userData.open?d.userData.opx:d.userData.ox;msg(d.userData.open?'🚪 Открыто: '+d.userData.nm:'🚪 Закрыто');return;}}
+for(const h of hideouts){const dx=px-h.x,dz=pz-h.z;if(Math.sqrt(dx*dx+dz*dz)<h.r){suspicion=Math.max(0,suspicion-35);score+=100;msg(h.nm+': Спрятался! Подозрение -35%');return;}}
+for(const n of npcs){const dx=px-n.x,dz=pz-n.z;if(Math.sqrt(dx*dx+dz*dz)<2.8){showNPCDialog(n);return;}}}
+function showNPCDialog(n){const box=document.getElementById('dialogBox');const d=n.dialogs[Math.floor(Math.random()*n.dialogs.length)];document.getElementById('dialogName').textContent=n.name;document.getElementById('dialogText').textContent='"'+d+'"';let btns='<button class="dialog-btn" onclick="closeDialog()">Ладно</button>';if(n.name.includes('Медсестра'))btns+='<button class="dialog-btn" onclick="getSickNote()">🤒 Притвориться больным</button>';document.getElementById('dialogBtns').innerHTML=btns;box.classList.add('show');}
+function getSickNote(){suspicion=Math.max(0,suspicion-40);score+=150;closeDialog();msg('🧑‍⚕️ Медсестра: "Держи справку на 10 минут. Отдыхай."');}
+
+// ИГРОВОЙ ЦИКЛ
+function update(){if(!gameRunning)return;
+let sp=isRunning?0.2:0.1,mx=0,mz=0;
+if(ja){mx=jx*sp;mz=-jy*sp;}
+if(keys['w']||keys['ArrowUp'])mz=-sp;if(keys['s']||keys['ArrowDown'])mz=sp;if(keys['a']||keys['ArrowLeft'])mx=-sp;if(keys['d']||keys['ArrowRight'])mx=sp;
+if(keys['Shift']&&stamina>0)isRunning=true;else if(!keys['Shift'])isRunning=false;
+if((keys[' ']||keys['Space'])&&!isJumping){isJumping=true;jumpVel=0.25;}
+if(isRunning&&(Math.abs(mx)>0||Math.abs(mz)>0)){stamina=Math.max(0,stamina-0.5);if(stamina<=0)isRunning=false;}else stamina=Math.min(100,stamina+0.3);
+if(isJumping){pm.position.y+=jumpVel;jumpVel-=0.015;if(pm.position.y<=0.7){pm.position.y=0.7;isJumping=false;jumpVel=0;}}
+const cos=Math.cos(camAngle),sin=Math.sin(camAngle);
+pm.position.x+=mx*cos-mz*sin;pm.position.z+=mx*sin+mz*cos;
+pm.position.x=Math.max(-17,Math.min(17,pm.position.x));pm.position.z=Math.max(-17,Math.min(17,pm.position.z));
+sh.position.x=pm.position.x;sh.position.z=pm.position.z;
+camera.position.set(pm.position.x-sin*10,14,pm.position.z-cos*10);camera.lookAt(pm.position.x,1,pm.position.z);
+for(const t of teachers){t.mesh.position.x+=t.dx*t.sp;t.mesh.position.z+=t.dz*t.sp;if(t.mesh.position.x>t.mxx||t.mesh.position.x<t.mnx)t.dx*=-1;if(t.mesh.position.z>t.mxz||t.mesh.position.z<t.mnz)t.dz*=-1;if(Math.random()<0.01){t.dx=Math.random()>0.5?1:-1;t.dz=Math.random()>0.5?1:-1;}
+const dx=pm.position.x-t.mesh.position.x,dz=pm.position.z-t.mesh.position.z;if(Math.sqrt(dx*dx+dz*dz)<2.8){suspicion=Math.min(100,suspicion+0.5);if(suspicion>=100)endGame(false);}}
+let near=false;for(const t of teachers)if(Math.sqrt((pm.position.x-t.mesh.position.x)**2+(pm.position.z-t.mesh.position.z)**2)<2.8)near=true;if(!near)suspicion=Math.max(0,suspicion-0.06);
+gameTime+=1/60;if(gameTime>=360)endGame(true);
+document.getElementById('timeUI').textContent='🕐 '+String(Math.floor(8+gameTime/60)).padStart(2,'0')+':'+String(Math.floor(gameTime%60)).padStart(2,'0');
+let curLesson='';for(const s of schedule)if(gameTime>=s.time)curLesson=s.lesson;document.getElementById('lessonUI').textContent=curLesson;
+document.getElementById('suspicionFill').style.width=suspicion+'%';document.getElementById('staminaMiniFill').style.width=stamina+'%';
+// Мини-карта
+mmCtx.fillStyle='rgba(0,0,0,0.8)';mmCtx.fillRect(0,0,65,65);
+const sx=65/36,sy=65/36;
+for(const t of teachers){mmCtx.fillStyle='#f44';mmCtx.fillRect((t.mesh.position.x+18)*sx-1.5,(t.mesh.position.z+18)*sy-1.5,3,3);}
+for(const h of hideouts){mmCtx.fillStyle='#0f0';mmCtx.fillRect((h.x+18)*sx-2,(h.z+18)*sy-2,4,4);}
+for(const n of npcs){mmCtx.fillStyle='#88f';mmCtx.fillRect((n.x+18)*sx-1,(n.z+18)*sy-1,2,2);}
+mmCtx.fillStyle='#ffd700';mmCtx.fillRect((pm.position.x+18)*sx-2.5,(pm.position.z+18)*sy-2.5,5,5);
+}
+
+function endGame(win){gameRunning=false;document.getElementById('endScreen').classList.add('show');
+if(win&&suspicion<20){document.getElementById('endTitle').textContent='🏆 НИНДЗЯ!';document.getElementById('endText').textContent='Идеальный день! Никто не заметил!';score+=5000;}
+else if(win){document.getElementById('endTitle').textContent='👍 ВЫЖИЛ';document.getElementById('endText').textContent='День окончен! Можно выдохнуть.';score+=1000;}
+else{document.getElementById('endTitle').textContent='💀 ПОЙМАН!';document.getElementById('endText').textContent='Директор вызвал родителей...';}
+document.getElementById('endScore').textContent='Очки: '+score;}
+
+function gameLoop(){update();renderer.render(scene,camera);requestAnimationFrame(gameLoop);}
+document.getElementById('btnPlay').addEventListener('click',()=>{document.getElementById('menuScreen').classList.add('hidden');gameRunning=true;suspicion=0;gameTime=0;score=0;stamina=100;pm.position.set(0,0.7,0);camAngle=0;});
+document.getElementById('btnRestart').addEventListener('click',()=>{document.getElementById('endScreen').classList.remove('show');gameRunning=true;suspicion=0;gameTime=0;score=0;stamina=100;pm.position.set(0,0.7,0);camAngle=0;for(const t of teachers)t.mesh.position.set((t.mnx+t.mxx)/2,0.7,(t.mnz+t.mxz)/2);});
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+gameLoop();
+</script>
+</body>
+</html>
