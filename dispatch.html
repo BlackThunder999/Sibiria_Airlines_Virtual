@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диспетчерская | Sibiria Airlines</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial; background: #0a0e17; color: white; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: #151a28; border-radius: 15px; padding: 25px; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #1e2538; color: white; margin-bottom: 10px; font-size: 1em; }
+        button { padding: 12px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; color: white; margin: 3px; }
+        .btn-login { background: #0066cc; width: 100%; }
+        .btn-depart { background: #ff8800; }
+        .btn-arrive { background: #00aa44; }
+        .btn-delete { background: #cc3333; }
+        .flight-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #222; flex-wrap: wrap; gap: 10px; }
+        .chat-box { height: 300px; overflow-y: auto; background: #0d1117; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
+        .chat-input { display: flex; gap: 10px; }
+        .chat-input input { margin-bottom: 0; }
+        .msg { padding: 5px 0; }
+        .time { color: #666; font-size: 0.8em; }
+        .back { color: #7eb8ff; text-decoration: none; display: inline-block; margin-bottom: 15px; }
+        #error { color: #ff4444; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back">← На главную</a>
+        
+        <div class="card" id="loginBox">
+            <h2>🔐 Вход в диспетчерскую</h2>
+            <input type="password" id="passInput" placeholder="Введите пароль">
+            <button class="btn-login" onclick="login()">Войти</button>
+            <p id="error"></p>
+        </div>
+        
+        <div id="mainBox" style="display:none;">
+            <div class="card">
+                <h2>📋 Рейсы</h2>
+                <div id="flightsList">Загрузка...</div>
+            </div>
+            <div class="card">
+                <h2>💬 Чат</h2>
+                <div class="chat-box" id="chatBox"></div>
+                <div class="chat-input">
+                    <input type="text" id="msgInput" placeholder="Сообщение...">
+                    <button class="btn-login" onclick="sendMsg()" style="width:auto;">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        const supabase = createClient(
+            'https://iljsednetiogjtowlexo.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsanNlZG5ldGlvZ2p0b3dsZXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MjcyOTUsImV4cCI6MjA5OTUwMzI5NX0.vkoXtCc_NnFfLqQqjMVlLxOcRZ-cTgjeIIBi2nikbWs'
+        );
+        
+        window.login = function() {
+            if (document.getElementById('passInput').value === 'Sibiria2026') {
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('mainBox').style.display = 'block';
+                loadFlights();
+                loadChat();
+                supabase.channel('updates')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'flights' }, loadFlights)
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, loadChat)
+                    .subscribe();
+            } else {
+                document.getElementById('error').textContent = 'Неверный пароль!';
+            }
+        };
+        
+        async function loadFlights() {
+            const { data } = await supabase.from('flights').select('*').order('departure_time');
+            const list = document.getElementById('flightsList');
+            if (!data) { list.innerHTML = 'Ошибка загрузки'; return; }
+            list.innerHTML = data.map(f => `
+                <div class="flight-row">
+                    <span><b>${f.flight_number}</b> | ${f.departure} → ${f.arrival} | ${f.status}</span>
+                    <span>
+                        ${f.status==='scheduled' ? `<button class="btn-depart" onclick="updateStatus(${f.id},'departed')">Взлетел</button>` : ''}
+                        ${f.status==='departed' ? `<button class="btn-arrive" onclick="updateStatus(${f.id},'arrived')">Сел</button>` : ''}
+                        <button class="btn-delete" onclick="del(${f.id})">Удалить</button>
+                    </span>
+                </div>
+            `).join('');
+        }
+        
+        window.updateStatus = async function(id, status) {
+            await supabase.from('flights').update({ status }).eq('id', id);
+            loadFlights();
+        };
+        
+        window.del = async function(id) {
+            if (confirm('Удалить рейс?')) {
+                await supabase.from('flights').delete().eq('id', id);
+                loadFlights();
+            }
+        };
+        
+        async function loadChat() {
+            const { data } = await supabase.from('messages').select('*').order('created_at', { ascending: true }).limit(50);
+            const box = document.getElementById('chatBox');
+            box.innerHTML = data ? data.map(m => `<div class="msg"><b>${m.sender}:</b> ${m.text} <span class="time">${new Date(m.created_at).toLocaleTimeString()}</span></div>`).join('') : '';
+            box.scrollTop = box.scrollHeight;
+        }
+        
+        window.sendMsg = async function() {
+            const input = document.getElementById('msgInput');
+            if (!input.value.trim()) return;
+            await supabase.from('messages').insert({ text: input.value, sender: 'Диспетчер' });
+            input.value = '';
+        };
+    </script>
+</body>
+</html>

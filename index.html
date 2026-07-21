@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sibiria Airlines Virtual</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #0a0e17;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .main {
+            background: #151a28;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 { font-size: 2em; margin: 15px 0 30px; }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+        .stat {
+            background: #1e2538;
+            border-radius: 15px;
+            padding: 25px 20px;
+            min-width: 150px;
+        }
+        .stat-label { color: #8892b0; font-size: 0.85em; margin-bottom: 8px; }
+        .stat-value { font-size: 2.5em; font-weight: bold; }
+        .stat-value.flights { color: #4dabf7; }
+        .stat-value.crashes { color: #ff6b6b; }
+        .stat-value.landings { color: #51cf66; }
+        .buttons { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+        .btn {
+            padding: 16px 30px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            font-size: 1.05em;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .btn-book { background: #0066cc; }
+        .btn-disp { background: #2a3a5e; }
+        .btn-admin { background: #2a3a5e; }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <h1>✈️ SIBIRIA AIRLINES VIRTUAL</h1>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">ВСЕГО РЕЙСОВ</div>
+                <div class="stat-value flights" id="flights">---</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">КАТАСТРОФ</div>
+                <div class="stat-value crashes" id="crashes">---</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">УДАЧНЫХ ПОСАДОК</div>
+                <div class="stat-value landings" id="landings">---</div>
+            </div>
+        </div>
+        <div class="buttons">
+            <a href="booking.html" class="btn btn-book">🛫 Бронирование</a>
+            <a href="dispatch.html" class="btn btn-disp">📡 Диспетчерская</a>
+            <a href="admin.html" class="btn btn-admin">⚙️ Админ-панель</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        const supabase = createClient(
+            'https://iljsednetiogjtowlexo.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlsanNlZG5ldGlvZ2p0b3dsZXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MjcyOTUsImV4cCI6MjA5OTUwMzI5NX0.vkoXtCc_NnFfLqQqjMVlLxOcRZ-cTgjeIIBi2nikbWs'
+        );
+        
+        async function load() {
+            try {
+                const { count } = await supabase.from('flights').select('*', { count: 'exact', head: true });
+                document.getElementById('flights').textContent = count || 0;
+                
+                const { data } = await supabase.from('stats').select('*').eq('id', 1).single();
+                if (data) {
+                    document.getElementById('crashes').textContent = data.crashes;
+                    document.getElementById('landings').textContent = data.successful_landings;
+                }
+            } catch(e) {
+                console.log('Ошибка:', e);
+            }
+        }
+        load();
+    </script>
+</body>
+</html>
